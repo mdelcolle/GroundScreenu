@@ -1,0 +1,9 @@
+build/
+app/build/
+.gradle/
+.tools/
+local.properties
+*.iml
+.idea/
+tools/debug.keystore
+javac.*.args

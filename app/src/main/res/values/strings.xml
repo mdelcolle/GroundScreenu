@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">GroundScreen</string>
+    <string name="subtitle">Duplica la pantalla de tu iPhone o iPad en esta TV</string>
+    <string name="airplay_name_label">Nombre en AirPlay</string>
+    <string name="ip_label">Dirección IP: %1$s</string>
+    <string name="howto_title">Cómo conectar</string>
+    <string name="howto_1">1. Conecta el iPhone a la misma red Wi-Fi que la TV.</string>
+    <string name="howto_2">2. Abre el Centro de control (desliza desde la esquina superior derecha).</string>
+    <string name="howto_3">3. Toca «Duplicar pantalla» y elige este nombre.</string>
+    <string name="status_starting">Iniciando receptor…</string>
+    <string name="status_ready">Listo. Busca «%1$s» en tu iPhone.</string>
+    <string name="status_connected">iPhone conectado (%1$s). Esperando la imagen…</string>
+    <string name="status_audio">Reproduciendo audio desde el iPhone.</string>
+    <string name="status_mirroring">Duplicando pantalla. Presiona Atrás para ocultar este panel.</string>
+    <string name="status_error">No se pudo iniciar el receptor: %1$s</string>
+    <string name="btn_rename">Cambiar nombre</string>
+    <string name="btn_quality">Calidad: %1$s</string>
+    <string name="btn_boot_on">Iniciar al encender: Sí</string>
+    <string name="btn_boot_off">Iniciar al encender: No</string>
+    <string name="btn_overlay">Abrir automáticamente</string>
+    <string name="overlay_granted">Permiso concedido: la app se abrirá sola al duplicar.</string>
+    <string name="overlay_unavailable">Este equipo no permite el permiso de superposición. Abre la app antes de duplicar.</string>
+    <string name="rename_title">Nombre del receptor</string>
+    <string name="notif_channel">Receptor AirPlay</string>
+    <string name="notif_text">Listo para duplicar pantalla desde iPhone</string>
+</resources>
