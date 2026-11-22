@@ -21,6 +21,7 @@
     <string name="btn_overlay">Abrir automáticamente</string>
     <string name="overlay_granted">Permiso concedido: la app se abrirá sola al duplicar.</string>
     <string name="overlay_unavailable">Este equipo no permite el permiso de superposición. Abre la app antes de duplicar.</string>
+    <string name="btn_diag">Diagnóstico</string>
     <string name="rename_title">Nombre del receptor</string>
     <string name="notif_channel">Receptor AirPlay</string>
     <string name="notif_text">Listo para duplicar pantalla desde iPhone</string>

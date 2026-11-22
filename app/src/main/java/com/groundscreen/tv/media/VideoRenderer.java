@@ -5,6 +5,8 @@ import android.media.MediaFormat;
 import android.util.Log;
 import android.view.Surface;
 
+import com.groundscreen.tv.util.DiagLog;
+
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -36,6 +38,8 @@ public final class VideoRenderer {
     private final List<byte[]> gop = new ArrayList<byte[]>();
     private long gopBytes;
     private boolean waitingForIdr = true;
+    /** Decoder failed; recreate it at the next IDR. */
+    private boolean codecFailed;
 
     private MediaCodec codec;
     private Thread drainThread;
@@ -65,6 +69,9 @@ public final class VideoRenderer {
             sps = newSps;
             pps = newPps;
             if (changed) {
+                int[] size = H264Util.spsSize(newSps);
+                DiagLog.add("Nuevo SPS/PPS " + (size != null ? size[0] + "x" + size[1] : "?"));
+                codecFailed = false;
                 gop.clear();
                 gopBytes = 0;
                 waitingForIdr = true;
@@ -87,6 +94,14 @@ public final class VideoRenderer {
                 gopBytes = 0;
                 waitingForIdr = false;
             } else if (waitingForIdr) {
+                return;
+            }
+            if (idr && codecFailed && codec == null && surface != null) {
+                codecFailed = false;
+                DiagLog.add("Reintentando decodificador");
+                gop.add(annexB);
+                gopBytes += annexB.length;
+                startCodecLocked();
                 return;
             }
             if (gop.size() < MAX_GOP_FRAMES && gopBytes + annexB.length < MAX_GOP_BYTES) {
@@ -125,9 +140,17 @@ public final class VideoRenderer {
             return;
         }
         try {
-            MediaFormat format = MediaFormat.createVideoFormat(MIME, 1920, 1080);
+            int[] size = H264Util.spsSize(sps);
+            int w = size != null ? size[0] : 1920;
+            int h = size != null ? size[1] : 1080;
+            DiagLog.videoSize = w + "x" + h;
+            MediaFormat format = MediaFormat.createVideoFormat(MIME, w, h);
             format.setByteBuffer("csd-0", ByteBuffer.wrap(sps));
             format.setByteBuffer("csd-1", ByteBuffer.wrap(pps));
+            // Allow rotation / portrait video without reallocating where the decoder supports it.
+            int max = Math.max(1920, Math.max(w, h));
+            format.setInteger(MediaFormat.KEY_MAX_WIDTH, max);
+            format.setInteger(MediaFormat.KEY_MAX_HEIGHT, max);
             format.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, 4 * 1024 * 1024);
             format.setInteger("low-latency", 1); // honoured on Android 11+, ignored before
             format.setInteger(MediaFormat.KEY_PRIORITY, 0);
@@ -144,12 +167,15 @@ public final class VideoRenderer {
             }, "video-drain");
             drainThread.start();
             Log.i(TAG, "Decoder started (" + codec.getName() + "), replaying " + gop.size() + " frames");
+            DiagLog.add("Decodificador " + codec.getName() + " " + w + "x" + h);
             for (byte[] f : gop) {
                 queueLocked(f, 0);
             }
         } catch (Exception e) {
             Log.e(TAG, "Failed to start decoder", e);
+            DiagLog.add("ERROR al iniciar decodificador: " + e);
             releaseCodecQuietly();
+            codecFailed = true;
         }
     }
 
@@ -171,7 +197,10 @@ public final class VideoRenderer {
             codec.queueInputBuffer(index, 0, data.length, ptsUs, flags);
         } catch (Exception e) {
             Log.e(TAG, "queueInputBuffer failed", e);
+            DiagLog.add("ERROR decodificador: " + e);
             stopCodecLocked();
+            codecFailed = true;
+            waitingForIdr = true;
         }
     }
 
@@ -182,6 +211,7 @@ public final class VideoRenderer {
                 int index = c.dequeueOutputBuffer(info, 20_000);
                 if (index >= 0) {
                     c.releaseOutputBuffer(index, true);
+                    DiagLog.framesDecoded++;
                 } else if (index == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
                     MediaFormat f = c.getOutputFormat();
                     int w = f.getInteger(MediaFormat.KEY_WIDTH);
@@ -193,12 +223,16 @@ public final class VideoRenderer {
                         h = f.getInteger("crop-bottom") + 1 - f.getInteger("crop-top");
                     }
                     Log.i(TAG, "Video size " + w + "x" + h);
+                    DiagLog.add("Salida de video " + w + "x" + h);
                     if (sizeListener != null) {
                         sizeListener.onVideoSize(w, h);
                     }
                 }
             } catch (IllegalStateException e) {
-                break; // codec stopped underneath us
+                if (draining) {
+                    DiagLog.add("ERROR salida decodificador: " + e);
+                }
+                break; // codec stopped or failed
             }
         }
     }

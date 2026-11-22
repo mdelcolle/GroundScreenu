@@ -4,6 +4,7 @@ import android.util.Log;
 
 import com.github.serezhka.airplay.protocol.FairPlaySession;
 import com.github.serezhka.airplay.protocol.fairplay.FairPlayVideoDecryptor;
+import com.groundscreen.tv.util.DiagLog;
 import com.groundscreen.tv.util.IoUtil;
 
 import java.io.BufferedInputStream;
@@ -74,9 +75,11 @@ final class MirrorVideoReceiver implements Runnable {
             s.setTcpNoDelay(true);
             s.setReceiveBufferSize(1024 * 1024);
             Log.i(TAG, "Mirror stream connected from " + s.getInetAddress().getHostAddress());
+            DiagLog.add("Canal de video conectado");
             receive(new BufferedInputStream(s.getInputStream(), 256 * 1024));
         } catch (EOFException e) {
             Log.i(TAG, "Mirror stream closed by sender");
+            DiagLog.add("Canal de video cerrado por el iPhone");
         } catch (IOException e) {
             if (running) {
                 Log.w(TAG, "Mirror stream error: " + e);
@@ -107,6 +110,7 @@ final class MirrorVideoReceiver implements Runnable {
             IoUtil.readFully(in, payload, 0, size);
 
             if (type == 0) {
+                DiagLog.videoPackets++;
                 if (decryptor == null) {
                     decryptor = session.newVideoDecryptor();
                 }
@@ -116,12 +120,22 @@ final class MirrorVideoReceiver implements Runnable {
                     listener.onVideoFrame(payload, ts);
                 } else if (++badFrames == 30) {
                     Log.e(TAG, "Many corrupted video frames: decryption probably failed");
+                    DiagLog.add("ERROR: video corrupto (fallo de descifrado)");
                 }
             } else if (type == 1) {
+                float sw = Float.intBitsToFloat(le32(header, 16));
+                float sh = Float.intBitsToFloat(le32(header, 20));
+                DiagLog.add("Config. video (pantalla " + Math.round(sw) + "x" + Math.round(sh) + ")");
                 parseCodecConfig(payload);
+            } else if (type != 2) {
+                DiagLog.add("Paquete video tipo " + type + " (" + size + " bytes)");
             }
             // type 2 = heartbeat, type 5 = streaming report: ignored
         }
+    }
+
+    private static int le32(byte[] b, int o) {
+        return (b[o] & 0xff) | (b[o + 1] & 0xff) << 8 | (b[o + 2] & 0xff) << 16 | (b[o + 3] & 0xff) << 24;
     }
 
     /** Rewrites 4-byte big-endian NAL lengths to Annex-B start codes in place. */

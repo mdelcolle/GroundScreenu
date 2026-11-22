@@ -146,6 +146,11 @@
                 android:id="@+id/btn_overlay"
                 style="@style/TvButton"
                 android:text="@string/btn_overlay" />
+
+            <Button
+                android:id="@+id/btn_diag"
+                style="@style/TvButton"
+                android:text="@string/btn_diag" />
         </LinearLayout>
 
         <TextView
@@ -156,4 +161,17 @@
             android:textColor="@color/text_secondary"
             android:textSize="14sp" />
     </LinearLayout>
+
+    <TextView
+        android:id="@+id/diag"
+        android:layout_width="560dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|end"
+        android:layout_margin="16dp"
+        android:background="#CC000000"
+        android:fontFamily="monospace"
+        android:padding="12dp"
+        android:textColor="#FF9EF0A0"
+        android:textSize="11sp"
+        android:visibility="gone" />
 </FrameLayout>

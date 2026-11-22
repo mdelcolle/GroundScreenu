@@ -114,6 +114,7 @@ final class AudioReceiver {
             }
         }
         lastSeq = seq;
+        com.groundscreen.tv.util.DiagLog.audioPackets++;
         int payloadLen = len - 12;
         byte[] audio = new byte[payloadLen];
         System.arraycopy(buf, off + 12, audio, 0, payloadLen);

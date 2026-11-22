@@ -56,6 +56,7 @@ public final class AudioRenderer {
                 Log.i(TAG, "Audio " + ct + " " + sampleRate + "Hz x" + channels + " spf=" + spf);
             } catch (Exception e) {
                 Log.e(TAG, "Audio decoder unavailable for " + ct + ": " + e);
+                com.groundscreen.tv.util.DiagLog.add("ERROR audio " + ct + ": " + e);
                 releaseLocked();
             }
         }

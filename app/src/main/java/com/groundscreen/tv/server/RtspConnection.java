@@ -8,6 +8,7 @@ import com.github.serezhka.airplay.protocol.media.AudioStreamInfo;
 import com.github.serezhka.airplay.protocol.media.MediaStreamInfo;
 import com.github.serezhka.airplay.protocol.media.VideoStreamInfo;
 import com.groundscreen.tv.util.BinaryPlist;
+import com.groundscreen.tv.util.DiagLog;
 import com.groundscreen.tv.util.IoUtil;
 
 import java.io.BufferedInputStream;
@@ -66,6 +67,7 @@ final class RtspConnection implements Runnable {
     public void run() {
         String remote = socket.getInetAddress().getHostAddress();
         Log.i(TAG, "Control connection from " + remote);
+        DiagLog.add("Conexión de " + remote);
         try {
             InputStream in = new BufferedInputStream(socket.getInputStream());
             OutputStream out = socket.getOutputStream();
@@ -80,6 +82,7 @@ final class RtspConnection implements Runnable {
         } catch (IOException e) {
             if (!closed) {
                 Log.i(TAG, "Connection ended: " + e);
+                DiagLog.add("Conexión terminada");
             }
         } catch (Exception e) {
             Log.e(TAG, "Control connection failed", e);
@@ -113,6 +116,7 @@ final class RtspConnection implements Runnable {
         String uri = req.uri;
         if (!"POST".equals(m) || !"/feedback".equals(uri)) {
             Log.d(TAG, m + " " + uri + " (" + req.body.length + " bytes)");
+            DiagLog.add(m + " " + uri + (req.protocol.startsWith("HTTP") ? " [HTTP]" : ""));
         }
         if ("GET".equals(m) && uri.startsWith("/info")) {
             return Response.ok(infoPlist(), "application/x-apple-binary-plist");
@@ -166,6 +170,7 @@ final class RtspConnection implements Runnable {
             return Response.ok();
         }
         Log.w(TAG, "Unhandled request: " + m + " " + uri);
+        DiagLog.add("  -> no soportado (404)");
         return new Response(404, "Not Found");
     }
 
@@ -185,6 +190,7 @@ final class RtspConnection implements Runnable {
             int port = video.start();
             listener.onMirrorStarted();
             Log.i(TAG, "Mirror video SETUP, data port " + port);
+            DiagLog.add("  -> video en puerto " + port);
             List<Object> streams = new ArrayList<Object>();
             streams.add(BinaryPlist.dict("dataPort", port, "type", AirPlayStreamType.SCREEN));
             return Response.ok(BinaryPlist.write(BinaryPlist.dict(
@@ -194,6 +200,7 @@ final class RtspConnection implements Runnable {
         }
         AudioStreamInfo a = (AudioStreamInfo) info;
         Log.i(TAG, "Audio SETUP " + a);
+        DiagLog.add("  -> audio " + a.getCompressionType());
         stopAudio();
         listener.onAudioFormat(a);
         audio = new AudioReceiver(session, listener);

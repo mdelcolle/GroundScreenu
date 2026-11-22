@@ -41,6 +41,16 @@ public final class MainActivity extends Activity implements AirPlayService.State
     private TextView ipText;
     private Button qualityButton;
     private Button bootButton;
+    private TextView diagText;
+    private final Runnable diagUpdater = new Runnable() {
+        @Override
+        public void run() {
+            if (diagText.getVisibility() == View.VISIBLE) {
+                diagText.setText(com.groundscreen.tv.util.DiagLog.dump());
+                handler.postDelayed(this, 1000);
+            }
+        }
+    };
     private AirPlayService service;
     private SurfaceHolder holder;
 
@@ -62,6 +72,18 @@ public final class MainActivity extends Activity implements AirPlayService.State
         qualityButton = (Button) findViewById(R.id.btn_quality);
         bootButton = (Button) findViewById(R.id.btn_boot);
         surfaceView.getHolder().addCallback(this);
+        diagText = (TextView) findViewById(R.id.diag);
+        findViewById(R.id.btn_diag).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                boolean show = diagText.getVisibility() != View.VISIBLE;
+                diagText.setVisibility(show ? View.VISIBLE : View.GONE);
+                handler.removeCallbacks(diagUpdater);
+                if (show) {
+                    handler.post(diagUpdater);
+                }
+            }
+        });
 
         findViewById(R.id.btn_rename).setOnClickListener(new View.OnClickListener() {
             @Override
@@ -106,6 +128,9 @@ public final class MainActivity extends Activity implements AirPlayService.State
         super.onStart();
         visible = true;
         attachService();
+        if (diagText.getVisibility() == View.VISIBLE) {
+            handler.post(diagUpdater);
+        }
     }
 
     @Override
